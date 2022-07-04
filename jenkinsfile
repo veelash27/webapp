@@ -1,0 +1,27 @@
+pipeline {
+    agent any
+    tools {
+        maven 'maven'
+    }
+
+    stages {
+        stage('SCM') {
+            steps {
+                git credentialsId: 'github', url: 'https://github.com/veelash27/webapp.git'
+            }
+        }
+        stage('Maven Build') {
+            steps {
+                sh "mvn clean package"
+            }
+        }
+        stage('Copying war file to host') {
+            steps {
+             sshPublisher(publishers: [sshPublisherDesc(configName: 'docker', transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: '''sudo mv ./root/dockerdeploy/target/WebApp.war  /root/dockerdeploy
+cd /root/dockerdeploy
+docker build -t myimage  ."
+docker run -d --name mycont -p 8080:8080 -t myimage"''', execTimeout: 120000, flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', remoteDirectory: '/root/dockerdeploy', remoteDirectorySDF: false, removePrefix: '', sourceFiles: '**/*.war')], usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])}
+        }
+        
+    }
+}
